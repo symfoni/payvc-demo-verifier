@@ -146,10 +146,10 @@ const Blockchain: FC<PropsWithChildren<BlockchainProps>> = (
         onClick={() => onClick && onClick(props.chainId)}
         className={active ? "active" : ""}
       >
-        <SChain>
+        {/* <SChain>
           <img src={chain.meta.logo} alt={name} />
           <p>{name}</p>
-        </SChain>
+        </SChain> */}
         {!!address && <p>{ellipseAddress(address)}</p>}
         <SBlockchainChildrenContainer>
           {fetching ? (
@@ -160,7 +160,7 @@ const Blockchain: FC<PropsWithChildren<BlockchainProps>> = (
             </Column>
           ) : (
             <>
-              {!!assets && assets.length ? (
+              {/* {!!assets && assets.length ? (
                 <SFullWidthContainer>
                   <h6>Balances</h6>
                   <Column center>
@@ -171,7 +171,7 @@ const Blockchain: FC<PropsWithChildren<BlockchainProps>> = (
                     )}
                   </Column>
                 </SFullWidthContainer>
-              ) : null}
+              ) : null} */}
               {address && !!actions && actions.length ? (
                 <SFullWidthContainer>
                   <h6>Methods</h6>

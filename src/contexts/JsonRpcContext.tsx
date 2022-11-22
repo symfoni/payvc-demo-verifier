@@ -93,6 +93,9 @@ interface IContext {
   isRpcRequestPending: boolean;
   isTestnet: boolean;
   setIsTestnet: (isTestnet: boolean) => void;
+  vcRpc: {
+    presentCredential: (chainId: string, address: string, params: { requisitionId: string }) => Promise<void>;
+  }
 }
 
 /**
@@ -124,29 +127,29 @@ export function JsonRpcContextProvider({
         address: string
       ) => Promise<IFormattedRpcResponse>
     ) =>
-    async (chainId: string, address: string) => {
-      if (typeof client === "undefined") {
-        throw new Error("WalletConnect is not initialized");
-      }
-      if (typeof session === "undefined") {
-        throw new Error("Session is not connected");
-      }
+      async (chainId: string, address: string) => {
+        if (typeof client === "undefined") {
+          throw new Error("WalletConnect is not initialized");
+        }
+        if (typeof session === "undefined") {
+          throw new Error("Session is not connected");
+        }
 
-      try {
-        setPending(true);
-        const result = await rpcRequest(chainId, address);
-        setResult(result);
-      } catch (err: any) {
-        console.error("RPC request failed: ", err);
-        setResult({
-          address,
-          valid: false,
-          result: err?.message ?? err,
-        });
-      } finally {
-        setPending(false);
-      }
-    };
+        try {
+          setPending(true);
+          const result = await rpcRequest(chainId, address);
+          setResult(result);
+        } catch (err: any) {
+          console.error("RPC request failed: ", err);
+          setResult({
+            address,
+            valid: false,
+            result: err?.message ?? err,
+          });
+        } finally {
+          setPending(false);
+        }
+      };
 
   const _verifyEip155MessageSignature = (
     message: string,
@@ -688,7 +691,7 @@ export function JsonRpcContextProvider({
               },
             },
           });
-          
+
           return {
             method: DEFAULT_POLKADOT_METHODS.POLKADOT_SIGN_TRANSACTION,
             address,
@@ -1035,6 +1038,50 @@ export function JsonRpcContextProvider({
     ),
   };
 
+  // -------- VC RPC METHODS --------
+  const vcRpc = {
+    presentCredential: async (chainId: string, address: string, params: { requisitionId: string }) => {
+      if (typeof client === "undefined") {
+        throw new Error("WalletConnect is not initialized");
+      }
+      if (typeof session === "undefined") {
+        throw new Error("Session is not connected");
+      }
+      console.log("params", params)
+
+      try {
+        setPending(true);
+
+        let valid = false;
+        let vp = ""
+        try {
+          vp = await client.request<string>({
+            topic: session!.topic,
+            chainId,
+            request: {
+              method: DEFAULT_EIP155_METHODS.PRESENT_CREDENTIAL,
+              params: [params.requisitionId],
+            },
+          });
+          valid = true;
+        } catch (e) {
+          valid = false;
+        }
+
+        // display result
+        setResult({
+          method: "presentCredential",
+          valid,
+          result: JSON.stringify(vp),
+        });
+      } catch (e) {
+        console.error(e);
+        setResult(null);
+      } finally {
+        setPending(false);
+      }
+    }
+  }
   return (
     <JsonRpcContext.Provider
       value={{
@@ -1049,6 +1096,7 @@ export function JsonRpcContextProvider({
         isRpcRequestPending: pending,
         isTestnet,
         setIsTestnet,
+        vcRpc
       }}
     >
       {children}
