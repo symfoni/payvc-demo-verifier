@@ -52,6 +52,7 @@ export enum DEFAULT_EIP155_METHODS {
   // PERSONAL_SIGN = "personal_sign",
   // ETH_SIGN_TYPED_DATA = "eth_signTypedData",
   PRESENT_CREDENTIAL = "present_credential",
+  REQUEST_CREDENTIAL = "request_credential",
 }
 
 export enum DEFAULT_EIP_155_EVENTS {

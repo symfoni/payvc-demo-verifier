@@ -137,8 +137,13 @@ const Home: NextPage = () => {
 			await ethereumRpc.testSignTypedData(chainId, address);
 		};
 
-		const onRequestCredentialPresentation = async (chainId: string, address: string, params: { requisitionId: string }) => {
+		const onRequestCredential = async (chainId: string, address: string, params: { requisitionId: string }) => {
 			console.log("onRequestCredentialPresentation requisitionId", params.requisitionId);
+			openRequestModal();
+			await vcRpc.requestCredential(chainId, address, params);
+		}
+		const onPresentCredential = async (chainId: string, address: string, params: { credentialType: string }) => {
+			console.log("onPresentCredential requisitionId", params.requisitionId);
 			openRequestModal();
 			await vcRpc.presentCredential(chainId, address, params);
 		}
@@ -165,21 +170,27 @@ const Home: NextPage = () => {
 			// 	callback: onSignTypedData,
 			// },
 			{
+				method: "Request Norwegian board directior credential",
+				callback: async (chainId, address) => onRequestCredential(chainId, address, { requisitionId: "req1" }),
+			},
+			{
 				method: "Present Norwegian board directior credential",
-				callback: async (chainId, address) => onRequestCredentialPresentation(chainId, address, { requisitionId: "req1" }),
-			},
-			{
-				method: "Present Norwegian id number credential",
-				callback: async (chainId, address) => onRequestCredentialPresentation(chainId, address, {
-					requisitionId: "456"
+				callback: async (chainId, address) => onPresentCredential(chainId, address, {
+					credentialType: "BoardDirectorNO"
 				}),
 			},
-			{
-				method: "Present Norwegian phone number credential",
-				callback: async (chainId, address) => onRequestCredentialPresentation(chainId, address, {
-					requisitionId: "789"
-				}),
-			},
+			// {
+			// 	method: "Request Norwegian id number credential",
+			// 	callback: async (chainId, address) => onRequestCredential(chainId, address, {
+			// 		requisitionId: "456"
+			// 	}),
+			// },
+			// {
+			// 	method: "Request Norwegian phone number credential",
+			// 	callback: async (chainId, address) => onRequestCredential(chainId, address, {
+			// 		requisitionId: "789"
+			// 	}),
+			// },
 		];
 	};
 

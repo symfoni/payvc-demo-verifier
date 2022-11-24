@@ -46,7 +46,8 @@ import {
 import { UserVerifier } from "@elrondnetwork/erdjs-walletcore/out/userVerifier";
 import { Signature } from "@elrondnetwork/erdjs-walletcore/out/signature";
 import { IVerifiable } from "@elrondnetwork/erdjs-walletcore/out/interface";
-
+import { createTRPCProxyClient, httpLink } from "@trpc/client";
+import superjson from "superjson";
 /**
  * Types
  */
@@ -94,7 +95,8 @@ interface IContext {
   isTestnet: boolean;
   setIsTestnet: (isTestnet: boolean) => void;
   vcRpc: {
-    presentCredential: (chainId: string, address: string, params: { requisitionId: string }) => Promise<void>;
+    requestCredential: (chainId: string, address: string, params: { requisitionId: string }) => Promise<void>;
+    presentCredential: (chainId: string, address: string, params: { credentialType: string }) => Promise<void>;
   }
 }
 
@@ -1040,7 +1042,48 @@ export function JsonRpcContextProvider({
 
   // -------- VC RPC METHODS --------
   const vcRpc = {
-    presentCredential: async (chainId: string, address: string, params: { requisitionId: string }) => {
+    requestCredential: async (chainId: string, address: string, params: { requisitionId: string }) => {
+      if (typeof client === "undefined") {
+        throw new Error("WalletConnect is not initialized");
+      }
+      if (typeof session === "undefined") {
+        throw new Error("Session is not connected");
+      }
+      console.log("params", params)
+
+      try {
+        setPending(true);
+
+        let valid = false;
+        let vp = ""
+        try {
+          vp = await client.request<string>({
+            topic: session!.topic,
+            chainId,
+            request: {
+              method: DEFAULT_EIP155_METHODS.REQUEST_CREDENTIAL,
+              params: [params.requisitionId],
+            },
+          });
+          valid = true;
+        } catch (e) {
+          valid = false;
+        }
+
+        // display result
+        setResult({
+          method: "presentCredential",
+          valid,
+          result: JSON.stringify(vp),
+        });
+      } catch (e) {
+        console.error(e);
+        setResult(null);
+      } finally {
+        setPending(false);
+      }
+    },
+    presentCredential: async (chainId: string, address: string, params: { credentialType: string }) => {
       if (typeof client === "undefined") {
         throw new Error("WalletConnect is not initialized");
       }
@@ -1060,13 +1103,30 @@ export function JsonRpcContextProvider({
             chainId,
             request: {
               method: DEFAULT_EIP155_METHODS.PRESENT_CREDENTIAL,
-              params: [params.requisitionId],
+              params: [params.credentialType],
             },
           });
           valid = true;
         } catch (e) {
           valid = false;
         }
+
+        const PAY_VC_URL = process.env.PAY_VC_URL || "http://localhost:3000";
+        const DEMO_VERIFIER_URL = process.env.DEMO_VERIFIER_URL || "http://localhost:3001";
+        const trpcClient = createTRPCProxyClient<AppRouter>({
+          links: [
+            httpLink({
+              url: `${PAY_VC_URL}/api/trpc`,
+            }),
+          ],
+          transformer: superjson,
+        });
+        const req = await fetch(`${PAY_VC_URL}/api/trpc/healthcheck`);
+        const json = await req.json();
+        console.log(json);
+
+
+
 
         // display result
         setResult({
